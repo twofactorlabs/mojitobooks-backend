@@ -3,8 +3,8 @@ from wtforms.validators import DataRequired, Length, Email, EqualTo
 
 
 class RegistrationForm(Form):
-    username = fields.StringField('Username',
-                           [DataRequired(), Length(min=2, max=20)])
+    name = fields.StringField('Username',
+                           [DataRequired(), Length(min=2, max=90)])
     email = fields.StringField('Email',
                         [DataRequired(), Email()])
     password = fields.PasswordField('Password', [DataRequired()])

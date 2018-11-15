@@ -1,10 +1,8 @@
-from flask import Flask, request
-from flask_restful import Resource, Api
-from forms import RegistrationForm, LoginForm
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'c24170e00d0368506c875c08b016f5b9'
-api = Api(app)
+from flask import request
+from flask_restful import Resource
+from deckslash import app, api
+from deckslash.models import User, Card
+from deckslash.forms import RegistrationForm, LoginForm
 
 class Home(Resource):
     def get(self):
@@ -35,6 +33,3 @@ api.add_resource(Home, '/')
 api.add_resource(About, '/about')
 api.add_resource(Login, '/login')
 api.add_resource(Register, '/register')
-
-if __name__ == '__main__':
-    app.run(debug=True)
