@@ -5,6 +5,8 @@
   flask_restful
   flask_sqlalchemy
   wtforms
+  flask-marshmallow
+  marshmallow-sqlalchemy
 3. Go to the deckslash-backend\Deck_Slash directory: 
   run the run.py file
   => The server will be running on http://127.0.0.1:5000/
