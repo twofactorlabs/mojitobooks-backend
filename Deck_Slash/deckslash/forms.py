@@ -1,5 +1,6 @@
 from wtforms import Form, fields
-from wtforms.validators import DataRequired, Length, Email, EqualTo
+from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
+from deckslash.models import User
 
 
 class RegistrationForm(Form):
@@ -10,6 +11,11 @@ class RegistrationForm(Form):
     password = fields.PasswordField('Password', [DataRequired()])
     confirm_password = fields.PasswordField('Confirm Password',
                                      [DataRequired(), EqualTo('password')])
+
+    def validate_email(self, email):
+        user = User.query.filter_by(email = email.data).first()
+        if user:
+            raise ValidationError('That email is taken.Please choose a different one')
 
 
 class LoginForm(Form):
