@@ -1,24 +1,24 @@
 from wtforms import Form, fields
-from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
+from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
 from deckslash.models import User
 
 
 class RegistrationForm(Form):
-    name = fields.StringField('Username',
+    name = fields.StringField('Name',
                            [DataRequired(), Length(min=2, max=90)])
-    email = fields.StringField('Email',
-                        [DataRequired(), Email()])
+    username = fields.StringField('Username',
+                        [DataRequired(), Length(min=2, max=20)])
     password = fields.PasswordField('Password', [DataRequired()])
     confirm_password = fields.PasswordField('Confirm Password',
                                      [DataRequired(), EqualTo('password')])
 
-    def validate_email(self, email):
-        user = User.query.filter_by(email = email.data).first()
+    def validate_username(self, username):
+        user = User.query.filter_by(username = username.data).first()
         if user:
-            raise ValidationError('That email is taken.Please choose a different one')
+            raise ValidationError('That username is taken.Please choose a different one')
 
 
 class LoginForm(Form):
-    email = fields.StringField('Email',
-                        validators=[DataRequired(), Email()])
+    username = fields.StringField('Username',
+                        validators=[DataRequired(), Length(min=2, max=20)])
     password = fields.PasswordField('Password', validators=[DataRequired()])

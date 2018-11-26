@@ -3,8 +3,8 @@ from deckslash import db, ma
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(20), unique=True, nullable=False)
     name = db.Column(db.String(90), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
     profile_image = db.Column(db.String(20), nullable=False,
                               default='/static/ProfileImage/default-avatar.png')
@@ -12,7 +12,7 @@ class User(db.Model):
     cards = db.relationship('Card', backref='author', lazy=True)
         
     def __repr__(self):
-        return f"User('{self.name}', '{self.email}', '{self.profile_image}')"
+        return f"User('{self.name}', '{self.username}', '{self.profile_image}')"
 
 class Card(db.Model):
     id = db.Column(db.Integer, primary_key=True)
