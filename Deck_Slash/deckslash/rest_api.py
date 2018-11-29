@@ -4,9 +4,11 @@ from deckslash import api, db, bcrypt
 from deckslash.models import User, Card, UserSchema, CardSchema
 from deckslash.forms import RegistrationForm, LoginForm
 
-class Home(Resource):
+class TestUser(Resource):
     def get(self):
-        return {'Greeting':'This is deckslash backend'}
+        user_schema = UserSchema(many=True)
+        output = user_schema.dump(User.query.with_entities(User.name, User.username, User.profile_image, User.bio).all()).data 
+        return output, 201
 
 class UserQuery(Resource):
     def post(self):
@@ -45,11 +47,11 @@ class Register(Resource):
             user = User(username = form.username.data, name = form.name.data, password=hashed_password)
             db.session.add(user)
             db.session.commit()
-            return {'message':'success'}
+            return 201
         else:
-            return {'error':'failed'}
+            return 404
 
-api.add_resource(Home, '/')
+api.add_resource(TestUser, '/testuser')
 api.add_resource(Login, '/login')
 api.add_resource(Register, '/register')
 api.add_resource(UserQuery, '/user')
