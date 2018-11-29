@@ -3,6 +3,7 @@ from deckslash import db, ma
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(50), unique=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     name = db.Column(db.String(90), nullable=False)
     password = db.Column(db.String(60), nullable=False)
