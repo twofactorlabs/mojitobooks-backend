@@ -39,6 +39,7 @@ class TestCard(Resource):
 
 # This is for real app
 class Search(Resource):
+    @token_required
     def post(self):
         term = request.get_json()['term']
         card_schema = CardSchema(many=True)
@@ -91,9 +92,9 @@ class Login(Resource):
                 token = jwt.encode({'public_id': user.public_id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
                 return {'token': token.decode('UTF-8')}
             else:
-                return {'Could not verify':404}
+                return {'message':'Could not verify'}, 401
         else:
-                return {'Could not verify':404}
+                return {'message':'Could not verify'}, 401
 
 class Register(Resource):
     def post(self):
@@ -105,13 +106,13 @@ class Register(Resource):
             db.session.commit()
             return {'message':'New user created!'}, 201
         else:
-            return {'message':'form validation wrong'}, 400
+            return {'message':'form validation wrong'}, 401
 
 api.add_resource(Search, '/')
 api.add_resource(TestUser, '/testuser')
 api.add_resource(TestCard, '/testcard')
 api.add_resource(Login, '/login')
 api.add_resource(Register, '/register')
-api.add_resource(Cards, '/cards')
 api.add_resource(Users, '/users/<username>')
 api.add_resource(Profile, '/<username>')
+api.add_resource(Cards, '/cards')
