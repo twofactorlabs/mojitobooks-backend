@@ -3,24 +3,16 @@ from flask_restful import Resource
 from deckslash import app, api, db, bcrypt
 from deckslash.models import User, Card, UserSchema, CardSchema
 from deckslash.forms import RegistrationForm, LoginForm
+from flask_jwt_extended import jwt_required, create_access_token, jwt_refresh_token_required, create_refresh_token, get_jwt_identity
+import datetime
 import uuid
-import jwt
-import datetime 
 from functools import wraps
 
 def token_required(f):
     @wraps(f)
+    @jwt_required
     def decorated(*args, **kwargs):
-        token = None
-        if 'x-access-token' in request.headers:
-            token = request.headers['x-access-token']
-        if not token:
-            return {'message':'Token is missing!'}, 401
-        try:
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-            current_user = User.query.filter_by(public_id=data['public_id']).first()
-        except:
-            return {'message':'Token is invalid!'}, 401
+        current_user = User.query.filter_by(public_id=get_jwt_identity()).first()
         return f(current_user, *args, **kwargs)
     return decorated
 
@@ -39,7 +31,6 @@ class TestCard(Resource):
 
 # This is for real app
 class Search(Resource):
-    @token_required
     def post(self):
         term = request.get_json()['term']
         card_schema = CardSchema(many=True)
@@ -50,12 +41,14 @@ class Search(Resource):
             output = card_schema.dump(Card.query.all()).data 
             return output, 200
 
-class Profile(Resource):
-    @token_required
+class Users(Resource):
     def get(current_user, self, username):
-        card_schema = CardSchema(many=True)
         user_schema = UserSchema()
-        output = {'user': user_schema.dump(current_user).data, 'cards': card_schema.dump(current_user.cards).data}
+        card_schema = CardSchema(many=True)
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return {'message':'No user found!'}, 400
+        output = {'user': user_schema.dump(user).data, 'cards': card_schema.dump(user.cards).data}
         return output, 200
 
     @token_required
@@ -63,20 +56,9 @@ class Profile(Resource):
         #Not yet implemented
         return {'message':'The user has been updated'}, 501
 
-class Users(Resource):
-    @token_required
-    def get(current_user, self, username):
-        user_schema = UserSchema()
-        user = User.query.filter_by(username=username).first()
-        if not user:
-            return {'message':'No user found!'}, 400
-        output = {'user': user_schema.dump(user).data, 'cards': card_schema.dump(user.cards).data}
-        return output, 200
-
 class Cards(Resource):
     @token_required
     def post(current_user, self):
-        print(current_user.id)
         data = request.get_json()
         card = Card(title=data['title'], description=data['description'], link=data['link'], user_id=current_user.id)
         db.session.add(card)
@@ -89,8 +71,8 @@ class Login(Resource):
         if form.validate():
             user = User.query.filter_by(username=form.username.data).first()
             if user and bcrypt.check_password_hash(user.password, form.password.data):
-                token = jwt.encode({'public_id': user.public_id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
-                return {'token': token.decode('UTF-8')}
+                return {'access_token': create_access_token(identity=user.public_id, expires_delta=datetime.timedelta(hours=1)),
+                        'refresh_token': create_refresh_token(identity=user.public_id, expires_delta=False)}, 200
             else:
                 return {'password':['Wrong password']}, 401
         else:
@@ -108,11 +90,17 @@ class Register(Resource):
         else:
             return form.errors, 400
 
+class Refresh(Resource):
+    @jwt_refresh_token_required
+    def get(self):
+        current_user = User.query.filter_by(public_id=get_jwt_identity()).first()
+        return {'access_token': create_access_token(identity=current_user.public_id, expires_delta=datetime.timedelta(hours=1))}, 200
+
 api.add_resource(Search, '/')
 api.add_resource(TestUser, '/testuser')
 api.add_resource(TestCard, '/testcard')
 api.add_resource(Login, '/login')
 api.add_resource(Register, '/register')
+api.add_resource(Refresh, '/refresh')
 api.add_resource(Users, '/users/<username>')
-api.add_resource(Profile, '/<username>')
 api.add_resource(Cards, '/cards')
