@@ -41,8 +41,21 @@ class Search(Resource):
             output = card_schema.dump(Card.query.all()).data 
             return output, 200
 
+class Profile(Resource):
+    @token_required
+    def get(current_user, self):
+        user_schema = UserSchema()
+        card_schema = CardSchema(many=True)
+        output = {'user':user_schema.dump(current_user).data, 'cards': card_schema.dump(current_user.cards).data}
+        return output, 200
+
+    @token_required
+    def post(current_user, self):
+        return {'message':'The user has been updated'}, 501
+        
+
 class Users(Resource):
-    def get(current_user, self, username):
+    def get(self, username):
         user_schema = UserSchema()
         card_schema = CardSchema(many=True)
         user = User.query.filter_by(username=username).first()
@@ -50,11 +63,6 @@ class Users(Resource):
             return {'message':'No user found!'}, 400
         output = {'user': user_schema.dump(user).data, 'cards': card_schema.dump(user.cards).data}
         return output, 200
-
-    @token_required
-    def put(current_user, self, username):
-        #Not yet implemented
-        return {'message':'The user has been updated'}, 501
 
 class Cards(Resource):
     @token_required
@@ -103,4 +111,5 @@ api.add_resource(Login, '/login')
 api.add_resource(Register, '/register')
 api.add_resource(Refresh, '/refresh')
 api.add_resource(Users, '/users/<username>')
+api.add_resource(Profile, '/profile')
 api.add_resource(Cards, '/cards')
