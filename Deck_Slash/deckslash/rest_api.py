@@ -4,7 +4,7 @@ from flask import request
 from flask_restful import Resource
 from deckslash import app, api, db, bcrypt
 from deckslash.models import User, Card, UserSchema, CardSchema
-from deckslash.forms import RegistrationForm, LoginForm, UpdateAccountForm, set_current_user
+from deckslash.forms import RegistrationForm, LoginForm, UpdateAccountForm, UpdatePictureForm, set_current_user
 from flask_jwt_extended import jwt_required, create_access_token, jwt_refresh_token_required, create_refresh_token, get_jwt_identity
 import datetime
 import uuid
@@ -74,15 +74,24 @@ class Profile(Resource):
         set_current_user(current_user)
         form = UpdateAccountForm(data=request.get_json())
         if form.validate():
-            if form.picture.data:
-                picture_file = save_picture(form.picture.data)
-                current_user.profile_image = '/static/ProfilePicture/' + picture_file
             current_user.username = form.username.data
             current_user.email = form.email.data
             current_user.name = form.name.data
             current_user.bio = form.bio.data
             db.session.commit()
             return {'message': 'Account successfully updated'}, 200
+        return form.errors, 400
+
+class ProfilePicture(Resource):
+    @token_required
+    def post(current_user, self):
+        form = UpdatePictureForm(data=request.get_json())
+        if form.validate():
+            if form.picture.data:
+                picture_file = save_picture(form.picture.data)
+                current_user.profile_image = '/static/ProfilePicture/' + picture_file
+                db.session.commit()
+            return {'message': 'Profile Picture successfully updated'}
         return form.errors, 400
         
 class Cards(Resource):
@@ -133,4 +142,5 @@ api.add_resource(Register, '/register')
 api.add_resource(Refresh, '/refresh')
 api.add_resource(Users, '/users/<username>')
 api.add_resource(Profile, '/profile')
+api.add_resource(ProfilePicture, '/profilepic')
 api.add_resource(Cards, '/cards')

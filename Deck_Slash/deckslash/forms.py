@@ -42,7 +42,6 @@ class UpdateAccountForm(Form):
                         [DataRequired(), Length(min=2, max=20)])
     email = fields.StringField('Email', [DataRequired(), Email()])
     bio = fields.StringField('Bio', [DataRequired(), Length(min=2, max=100)])
-    picture = FileField('Update Profile Picture', [FileAllowed(['jpg', 'png'])])
 
     def validate_username(self, username):
         global currentUser
@@ -58,3 +57,7 @@ class UpdateAccountForm(Form):
             if email:
                 raise ValidationError('That email is already used. Please choose a different one')
         
+class UpdatePictureForm(Form):
+    picture = FileField('Update Profile Picture', [FileAllowed(['jpg', 'png'])])
+
+    
