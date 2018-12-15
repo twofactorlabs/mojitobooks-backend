@@ -4,6 +4,9 @@ from wtforms.validators import DataRequired, Length, EqualTo, Email, ValidationE
 from deckslash.models import User
 
 currentUser = User.query.first()
+def set_current_user(current_user):
+    global currentUser
+    currentUser = current_user
 
 class RegistrationForm(Form):
     name = fields.StringField('Name',
