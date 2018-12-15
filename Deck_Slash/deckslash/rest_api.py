@@ -1,8 +1,10 @@
+import os
+import secrets
 from flask import request
 from flask_restful import Resource
 from deckslash import app, api, db, bcrypt
 from deckslash.models import User, Card, UserSchema, CardSchema
-from deckslash.forms import RegistrationForm, LoginForm
+from deckslash.forms import RegistrationForm, LoginForm, UpdateAccountForm, currentUser
 from flask_jwt_extended import jwt_required, create_access_token, jwt_refresh_token_required, create_refresh_token, get_jwt_identity
 import datetime
 import uuid
@@ -15,6 +17,14 @@ def token_required(f):
         current_user = User.query.filter_by(public_id=get_jwt_identity()).first()
         return f(current_user, *args, **kwargs)
     return decorated
+
+def save_picture(form_picture):
+    random_hex = secrets.token_hex(8)
+    _, f_ext = os.path.splitext(form_picture.filename)
+    picture_fn = random_hex + f_ext
+    picture_path = os.path.join(app.root_path, 'static/ProfileImage', picture_fn)
+    form_picture.save(picture_path)
+    return picture_fn
 
 # This is for admin
 class TestUser(Resource):
@@ -41,19 +51,6 @@ class Search(Resource):
             output = card_schema.dump(Card.query.all()).data 
             return output, 200
 
-class Profile(Resource):
-    @token_required
-    def get(current_user, self):
-        user_schema = UserSchema()
-        card_schema = CardSchema(many=True)
-        output = {'user':user_schema.dump(current_user).data, 'cards': card_schema.dump(current_user.cards).data}
-        return output, 200
-
-    @token_required
-    def post(current_user, self):
-        return {'message':'The user has been updated'}, 501
-        
-
 class Users(Resource):
     def get(self, username):
         user_schema = UserSchema()
@@ -64,6 +61,30 @@ class Users(Resource):
         output = {'user': user_schema.dump(user).data, 'cards': card_schema.dump(user.cards).data}
         return output, 200
 
+class Profile(Resource):
+    @token_required
+    def get(current_user, self):
+        user_schema = UserSchema()
+        card_schema = CardSchema(many=True)
+        output = {'user':user_schema.dump(current_user).data, 'cards': card_schema.dump(current_user.cards).data}
+        return output, 200
+
+    @token_required
+    def post(current_user, self):
+        currentUser = current_user
+        form = UpdateAccountForm(data=request.get_json())
+        if form.validate():
+            if form.picture.data:
+                picture_file = save_picture(form.picture.data)
+                current_user.profile_image = '/static/ProfilePicture' + picture_file
+            current_user.username = form.username.data
+            current_user.email = form.email.data
+            current_user.name = form.name.data
+            current_user.bio = form.bio.data
+            db.session.commit()
+            return {'message': 'Account successfully updated'}, 200
+        return form.errors, 400
+        
 class Cards(Resource):
     @token_required
     def post(current_user, self):

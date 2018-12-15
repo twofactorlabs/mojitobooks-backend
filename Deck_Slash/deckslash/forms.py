@@ -1,7 +1,9 @@
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import Form, fields
 from wtforms.validators import DataRequired, Length, EqualTo, Email, ValidationError
 from deckslash.models import User
 
+currentUser = User.query.first()
 
 class RegistrationForm(Form):
     name = fields.StringField('Name',
@@ -28,3 +30,28 @@ class LoginForm(Form):
     username = fields.StringField('Username',
                         validators=[DataRequired(), Length(min=2, max=20)])
     password = fields.PasswordField('Password', validators=[DataRequired()])
+
+
+class UpdateAccountForm(Form):
+    name = fields.StringField('Name',
+                           [DataRequired(), Length(min=2, max=90)])
+    username = fields.StringField('Username',
+                        [DataRequired(), Length(min=2, max=20)])
+    email = fields.StringField('Email', [DataRequired(), Email()])
+    bio = fields.StringField('Bio', [DataRequired(), Length(min=2, max=100)])
+    picture = FileField('Update Profile Picture', [FileAllowed(['jpg', 'png'])])
+
+    def validate_username(self, username):
+        global currentUser
+        if username.data != currentUser.username:
+            user = User.query.filter_by(username = username.data).first()
+            if user:
+                raise ValidationError('That username is taken. Please choose a different one')
+
+    def validate_email(self, email):
+        global currentUser
+        if email.data != currentUser.email:
+            email = User.query.filter_by(email = email.data).first()
+            if email:
+                raise ValidationError('That email is already used. Please choose a different one')
+        
