@@ -85,13 +85,13 @@ class Profile(Resource):
 class ProfilePicture(Resource):
     @token_required
     def post(current_user, self):
-        form = UpdatePictureForm(data=request.get_json())
+        form = UpdatePictureForm(data=request.files)
         if form.validate():
             if form.picture.data:
-                picture_file = save_picture(form.picture.data)
+                picture_file = save_picture(form.picture.data[0])
                 current_user.profile_image = '/static/ProfilePicture/' + picture_file
                 db.session.commit()
-            return {'message': 'Profile Picture successfully updated'}
+                return {'message': 'Profile Picture successfully updated'}, 205
         return form.errors, 400
         
 class Cards(Resource):
