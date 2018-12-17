@@ -88,8 +88,8 @@ class ProfilePicture(Resource):
         form = UpdatePictureForm(data=request.files)
         if form.validate():
             if form.picture.data:
-                picture_file = save_picture(form.picture.data[0])
-                current_user.profile_image = '/static/ProfilePicture/' + picture_file
+                picture_file = save_picture(form.picture.data)
+                current_user.profile_image = '/static/ProfileImage/' + picture_file
                 db.session.commit()
                 return {'message': 'Profile Picture successfully updated'}, 205
         return form.errors, 400

@@ -58,6 +58,6 @@ class UpdateAccountForm(Form):
                 raise ValidationError('That email is already used. Please choose a different one')
         
 class UpdatePictureForm(Form):
-    picture = FileField('Update Profile Picture', [FileAllowed(['jpg', 'png'])])
+    picture = FileField('Update Profile Picture', [FileAllowed(['jpg', 'jpeg', 'png'])])
 
     
