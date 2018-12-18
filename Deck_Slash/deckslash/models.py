@@ -9,7 +9,7 @@ class User(db.Model):
     name = db.Column(db.String(90), nullable=False)
     password = db.Column(db.String(60), nullable=False)
     profile_image = db.Column(db.String(200), nullable=False,
-                              default='/static/ProfileImage/default-avatar.png')
+                              default='default-avatar.png')
     bio = db.Column(db.Text, nullable = False, default='This is my bio')
     cards = db.relationship('Card', backref='author', lazy=True)
         
@@ -23,7 +23,7 @@ class Card(db.Model):
     link = db.Column(db.Text)
     date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     picture = db.Column(db.String(20), nullable=False,
-                        default='/static/CardPicture/card_default.png')
+                        default='card_default.png')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):

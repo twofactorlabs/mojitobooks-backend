@@ -4,12 +4,14 @@ from flask import request
 from flask_restful import Resource
 from deckslash import app, api, db, bcrypt
 from deckslash.models import User, Card, UserSchema, CardSchema
-from deckslash.forms import RegistrationForm, LoginForm, UpdateAccountForm, UpdatePictureForm, set_current_user
+from deckslash.forms import RegistrationForm, LoginForm, UpdateAccountForm, PictureForm, set_current_user
 from flask_jwt_extended import jwt_required, create_access_token, jwt_refresh_token_required, create_refresh_token, get_jwt_identity
 import datetime
 import uuid
 from functools import wraps
 
+
+# GLOBAL FUNCTIONS
 def token_required(f):
     @wraps(f)
     @jwt_required
@@ -18,15 +20,19 @@ def token_required(f):
         return f(current_user, *args, **kwargs)
     return decorated
 
-def save_picture(form_picture):
+def save_picture(form_picture, pic_type):
     random_hex = secrets.token_hex(8)
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
-    picture_path = os.path.join(app.root_path, 'static/ProfileImage', picture_fn)
+    if pic_type == 'profile':
+        picture_path = os.path.join(app.root_path, 'static\ProfileImage', picture_fn)
+    elif pic_type == 'card':
+        picture_path = os.path.join(app.root_path, 'static\CardPicture', picture_fn)
     form_picture.save(picture_path)
     return picture_fn
 
-# This is for admin
+
+# FOR ADMIN AND TESTING ONLY
 class TestUser(Resource):
     def get(self):
         user_schema = UserSchema(many=True)
@@ -39,7 +45,10 @@ class TestCard(Resource):
         output = card_schema.dump(Card.query.all()).data 
         return output, 200
 
-# This is for real app
+
+# REAL APPLICATION
+
+# Functions for anonymous users
 class Search(Resource):
     def post(self):
         term = request.get_json()['term']
@@ -61,6 +70,7 @@ class Users(Resource):
         output = {'user': user_schema.dump(user).data, 'cards': card_schema.dump(user.cards).data}
         return output, 200
 
+# Functions for authorized users
 class Profile(Resource):
     @token_required
     def get(current_user, self):
@@ -85,11 +95,13 @@ class Profile(Resource):
 class ProfilePicture(Resource):
     @token_required
     def post(current_user, self):
-        form = UpdatePictureForm(data=request.files)
+        form = PictureForm(data=request.files)
         if form.validate():
             if form.picture.data:
-                picture_file = save_picture(form.picture.data)
-                current_user.profile_image = '/static/ProfileImage/' + picture_file
+                picture_file = save_picture(form.picture.data[0] if type(form.picture.data) is list else form.picture.data, 'profile')
+                if current_user.profile_image != 'default-avatar.png':
+                    os.remove(os.path.join(app.root_path, 'static\ProfileImage' ,current_user.profile_image))
+                current_user.profile_image = picture_file
                 db.session.commit()
                 return {'message': 'Profile Picture successfully updated'}, 205
         return form.errors, 400
@@ -97,12 +109,20 @@ class ProfilePicture(Resource):
 class Cards(Resource):
     @token_required
     def post(current_user, self):
-        data = request.get_json()
-        card = Card(title=data['title'], description=data['description'], link=data['link'], user_id=current_user.id)
-        db.session.add(card)
-        db.session.commit()
-        return {'message':'New card created!'}, 201
+        data = request.form
+        form = PictureForm(data=request.files)
+        if form.validate():
+            card = Card(title=data['title'], description=data['description'], link=data['link'], user_id=current_user.id)
+            if form.picture.data:
+                picture_file = save_picture(form.picture.data[0] if type(form.picture.data) is list else form.picture.data, 'card')
+                card.picture = picture_file
+            db.session.add(card)
+            db.session.commit()
+            return {'message':'New card created!'}, 201
+        return form.errors, 400
 
+
+# AUTHENTICATION AND AUTHORIZATION
 class Login(Resource):
     def post(self):
         form = LoginForm(data=request.get_json())
@@ -133,6 +153,7 @@ class Refresh(Resource):
     def get(self):
         current_user = User.query.filter_by(public_id=get_jwt_identity()).first()
         return {'access_token': create_access_token(identity=current_user.public_id, expires_delta=datetime.timedelta(hours=1))}, 200
+
 
 api.add_resource(Search, '/')
 api.add_resource(TestUser, '/testuser')

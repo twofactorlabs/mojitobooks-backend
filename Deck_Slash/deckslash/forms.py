@@ -3,10 +3,12 @@ from wtforms import Form, fields
 from wtforms.validators import DataRequired, Length, EqualTo, Email, ValidationError
 from deckslash.models import User
 
+
 currentUser = User.query.first()
 def set_current_user(current_user):
     global currentUser
     currentUser = current_user
+
 
 class RegistrationForm(Form):
     name = fields.StringField('Name',
@@ -56,8 +58,10 @@ class UpdateAccountForm(Form):
             email = User.query.filter_by(email = email.data).first()
             if email:
                 raise ValidationError('That email is already used. Please choose a different one')
+
         
-class UpdatePictureForm(Form):
+class PictureForm(Form):
     picture = FileField('Update Profile Picture', [FileAllowed(['jpg', 'jpeg', 'png'])])
 
+    
     
