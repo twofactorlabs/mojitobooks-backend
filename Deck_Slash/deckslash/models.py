@@ -10,7 +10,7 @@ class User(db.Model):
     password = db.Column(db.String(60), nullable=False)
     profile_image = db.Column(db.String(200), nullable=False,
                               default='default-avatar.png')
-    bio = db.Column(db.Text, nullable = False, default='This is my bio')
+    bio = db.Column(db.Text, nullable = False, default='My bio')
     cards = db.relationship('Card', backref='author', lazy=True)
         
     def __repr__(self):
@@ -20,11 +20,11 @@ class Card(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    link = db.Column(db.Text)
+    likes = db.Column(db.Integer, nullable=False, default=0)
     date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     picture = db.Column(db.String(20), nullable=False,
                         default='card_default.png')
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.public_id'), nullable=False)
 
     def __repr__(self):
         return f"Card('{self.title}', '{self.date_posted}')"
@@ -37,4 +37,4 @@ class UserSchema(ma.ModelSchema):
 class CardSchema(ma.ModelSchema):
     class Meta:
         model = Card
-        fields = ('id', 'title', 'description', 'link', 'date_posted', 'picture', 'author')
+        fields = ('id', 'title', 'description', 'likes', 'date_posted', 'picture', 'author')
