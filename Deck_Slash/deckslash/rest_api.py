@@ -106,7 +106,7 @@ class ProfilePicture(Resource):
                 return {'message': 'Profile Picture successfully updated'}, 205
         return form.errors, 400
         
-class Cards(Resource):
+class Post(Resource):
     @token_required
     def post(current_user, self):
         data = request.form
@@ -118,8 +118,19 @@ class Cards(Resource):
                 card.picture = picture_file
             db.session.add(card)
             db.session.commit()
-            return {'message':'New card created!'}, 201
+            return {'message':'New post created!'}, 201
         return form.errors, 400
+
+    @token_required
+    def delete(current_user, self, card_id):
+        card = Card.query.filter_by(id=card_id).first()
+        if card:
+            db.session.delete(card)
+            db.session.commit()
+            return {'message':'Successfully deleted post!'}, 200
+        else:
+            return {'message': 'Cannot find post'}, 400
+        
 
 
 # AUTHENTICATION AND AUTHORIZATION
@@ -129,7 +140,7 @@ class Login(Resource):
         if form.validate():
             user = User.query.filter_by(username=form.username.data).first()
             if user and bcrypt.check_password_hash(user.password, form.password.data):
-                return {'access_token': create_access_token(identity=user.public_id, expires_delta=datetime.timedelta(hours=1)),
+                return {'access_token': create_access_token(identity=user.public_id, expires_delta=datetime.timedelta(days=3)),
                         'refresh_token': create_refresh_token(identity=user.public_id, expires_delta=False)}, 200
             else:
                 return {'password':['Wrong password']}, 401
@@ -152,7 +163,7 @@ class Refresh(Resource):
     @jwt_refresh_token_required
     def get(self):
         current_user = User.query.filter_by(public_id=get_jwt_identity()).first()
-        return {'access_token': create_access_token(identity=current_user.public_id, expires_delta=datetime.timedelta(hours=1))}, 200
+        return {'access_token': create_access_token(identity=current_user.public_id, expires_delta=datetime.timedelta(days=3))}, 200
 
 
 api.add_resource(Search, '/')
@@ -164,4 +175,4 @@ api.add_resource(Refresh, '/refresh')
 api.add_resource(Users, '/users/<username>')
 api.add_resource(Profile, '/profile')
 api.add_resource(ProfilePicture, '/profilepic')
-api.add_resource(Cards, '/cards')
+api.add_resource(Post, '/post', '/post/<int:card_id>')

@@ -37,4 +37,4 @@ class UserSchema(ma.ModelSchema):
 class CardSchema(ma.ModelSchema):
     class Meta:
         model = Card
-        fields = ('title', 'description', 'link', 'date_posted', 'picture', 'author')
+        fields = ('id', 'title', 'description', 'link', 'date_posted', 'picture', 'author')
