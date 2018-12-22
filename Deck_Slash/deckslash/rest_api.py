@@ -25,9 +25,9 @@ def save_picture(form_picture, pic_type):
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
     if pic_type == 'profile':
-        picture_path = os.path.join(app.root_path, 'static\ProfileImage', picture_fn)
+        picture_path = os.path.join(app.root_path, 'static/ProfileImage', picture_fn)
     elif pic_type == 'card':
-        picture_path = os.path.join(app.root_path, 'static\CardPicture', picture_fn)
+        picture_path = os.path.join(app.root_path, 'static/CardPicture', picture_fn)
     form_picture.save(picture_path)
     return picture_fn
 
@@ -100,7 +100,7 @@ class ProfilePicture(Resource):
             if form.picture.data:
                 picture_file = save_picture(form.picture.data[0] if type(form.picture.data) is list else form.picture.data, 'profile')
                 if current_user.profile_image != 'default-avatar.png':
-                    os.remove(os.path.join(app.root_path, 'static\ProfileImage' ,current_user.profile_image))
+                    os.remove(os.path.join(app.root_path, 'static/ProfileImage' ,current_user.profile_image))
                 current_user.profile_image = picture_file
                 db.session.commit()
                 return {'message': 'Profile Picture successfully updated'}, 205
@@ -112,7 +112,7 @@ class Post(Resource):
         data = request.form
         form = PictureForm(data=request.files)
         if form.validate():
-            card = Card(title=data['title'], description=data['description'], link=data['link'], user_id=current_user.id)
+            card = Card(title=data['title'], description=data['description'], user_id=current_user.id)
             if form.picture.data:
                 picture_file = save_picture(form.picture.data[0] if type(form.picture.data) is list else form.picture.data, 'card')
                 card.picture = picture_file
