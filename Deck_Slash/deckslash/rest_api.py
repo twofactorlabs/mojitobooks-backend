@@ -151,7 +151,7 @@ class Post(Resource):
         card = Card.query.filter_by(id=card_id).first()
         if card and card in current_user.cards:
             if card.picture != 'card_default.png':
-                os.remove(os.path.join(app.root_path, 'static\CardPicture' ,card.picture))
+                os.remove(os.path.join(app.root_path, 'static/CardPicture' ,card.picture))
             db.session.delete(card)
             db.session.commit()
             return {'message':'Successfully deleted post!'}, 200
