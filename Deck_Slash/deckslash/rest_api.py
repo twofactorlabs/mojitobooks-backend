@@ -136,7 +136,7 @@ class Post(Resource):
         form = CardForm(data=request.get_json())
         if form.validate():
             card = Card.query.filter_by(id=card_id).first()
-            if card:
+            if card and card in current_user.cards:
                 card.title = form.title.data
                 card.description = form.description.data
                 db.session.commit()
@@ -149,7 +149,7 @@ class Post(Resource):
     @token_required
     def delete(current_user, self, card_id):
         card = Card.query.filter_by(id=card_id).first()
-        if card:
+        if card and card in current_user.cards:
             if card.picture != 'card_default.png':
                 os.remove(os.path.join(app.root_path, 'static\CardPicture' ,card.picture))
             db.session.delete(card)
