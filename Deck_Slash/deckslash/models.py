@@ -24,7 +24,7 @@ class Card(db.Model):
     date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     picture = db.Column(db.String(20), nullable=False,
                         default='card_default.png')
-    user_id = db.Column(db.Integer, db.ForeignKey('user.public_id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
         return f"Card('{self.title}', '{self.date_posted}')"

@@ -65,7 +65,7 @@ class CardForm(Form):
     
 
 class PictureForm(Form):
-    picture = FileField('Update Profile Picture', [FileAllowed(['jpg', 'jpeg', 'png'])])
+    picture = FileField('Update Profile Picture', [FileAllowed(['jpg', 'jpeg', 'png', 'gif'])])
 
     
     
