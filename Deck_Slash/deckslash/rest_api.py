@@ -123,8 +123,8 @@ class Post(Resource):
         form_text = CardForm(data)
         if form_pic.validate() and form_text.validate():
             card = Card(title=data['title'], description=data['description'], user_id=current_user.id)
-            if form.picture.data:
-                picture_file = save_picture(form.picture.data[0] if type(form.picture.data) is list else form.picture.data, 'card')
+            if form_pic.picture.data:
+                picture_file = save_picture(form_pic.picture.data[0] if type(form_pic.picture.data) is list else form_pic.picture.data, 'card')
                 card.picture = picture_file
             db.session.add(card)
             db.session.commit()
