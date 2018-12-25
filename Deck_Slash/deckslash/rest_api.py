@@ -4,7 +4,7 @@ from flask import request
 from flask_restful import Resource
 from deckslash import app, api, db, bcrypt
 from deckslash.models import User, Card, UserSchema, CardSchema
-from deckslash.forms import RegistrationForm, LoginForm, UpdateAccountForm, PictureForm, set_current_user
+from deckslash.forms import RegistrationForm, LoginForm, UpdateAccountForm, CardForm, PictureForm, set_current_user
 from flask_jwt_extended import jwt_required, create_access_token, jwt_refresh_token_required, create_refresh_token, get_jwt_identity
 import datetime
 import uuid
@@ -107,11 +107,21 @@ class ProfilePicture(Resource):
         return form.errors, 400
         
 class Post(Resource):
+    def get(self, card_id):
+        card_schema = CardSchema()
+        card = Card.query.filter_by(id=card_id).first()
+        if card: 
+            output = card_schema.dump(card).data 
+            return output, 200
+        else:
+            return {'message':'Could not find card'}, 400
+    
     @token_required
     def post(current_user, self):
         data = request.form
-        form = PictureForm(data=request.files)
-        if form.validate():
+        form_pic = PictureForm(data=request.files)
+        form_text = CardForm(data)
+        if form_pic.validate() and form_text.validate():
             card = Card(title=data['title'], description=data['description'], link=data['link'], user_id=current_user.id)
             if form.picture.data:
                 picture_file = save_picture(form.picture.data[0] if type(form.picture.data) is list else form.picture.data, 'card')
@@ -119,12 +129,29 @@ class Post(Resource):
             db.session.add(card)
             db.session.commit()
             return {'message':'New post created!'}, 201
-        return form.errors, 400
+        return [form_pic.errors, form_text.errors], 400
+
+    @token_required
+    def put(current_user, self, card_id):
+        form = CardForm(data=request.get_json())
+        if form.validate():
+            card = Card.query.filter_by(id=card_id).first()
+            if card:
+                card.title = form.title.data
+                card.description = form.description.data
+                db.session.commit()
+                return {'message':'Card successfully updated'}, 200
+            else:
+                return {'message':'Could not find card'}, 400
+        else:
+            return form.errors, 400
 
     @token_required
     def delete(current_user, self, card_id):
         card = Card.query.filter_by(id=card_id).first()
         if card:
+            if card.picture != 'card_default.png':
+                os.remove(os.path.join(app.root_path, 'static\CardPicture' ,card.picture))
             db.session.delete(card)
             db.session.commit()
             return {'message':'Successfully deleted post!'}, 200

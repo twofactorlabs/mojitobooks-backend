@@ -59,7 +59,11 @@ class UpdateAccountForm(Form):
             if email:
                 raise ValidationError('That email is already used. Please choose a different one')
 
-        
+class CardForm(Form):
+    title = fields.StringField('Title', [DataRequired(), Length(min=2, max=100)])
+    description = fields.StringField('Description', [DataRequired()])
+    
+
 class PictureForm(Form):
     picture = FileField('Update Profile Picture', [FileAllowed(['jpg', 'jpeg', 'png'])])
 
