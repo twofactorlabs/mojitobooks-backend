@@ -50,14 +50,19 @@ class TestCard(Resource):
 
 # Functions for anonymous users
 class Search(Resource):
+    def get(self):
+        card_schema = CardSchema(many=True)
+        output = card_schema.dump(Card.query.order_by('date_posted desc').limit(30).all()).data 
+        return output, 200
+    
     def post(self):
         term = request.get_json()['term']
         card_schema = CardSchema(many=True)
         if term:
-            output = card_schema.dump(Card.query.filter(Card.title.contains(term)).all()).data
+            output = card_schema.dump(Card.query.filter(Card.title.contains(term)).order_by('date_posted desc').limit(30).all()).data
             return output, 200
         else:
-            output = card_schema.dump(Card.query.all()).data 
+            output = card_schema.dump(Card.query.order_by('date_posted desc').limit(30).all()).data 
             return output, 200
 
 class Users(Resource):
@@ -193,9 +198,9 @@ class Refresh(Resource):
         return {'access_token': create_access_token(identity=current_user.public_id, expires_delta=datetime.timedelta(days=3))}, 200
 
 
-api.add_resource(Search, '/')
 api.add_resource(TestUser, '/testuser')
 api.add_resource(TestCard, '/testcard')
+api.add_resource(Search, '/search')
 api.add_resource(Login, '/login')
 api.add_resource(Register, '/register')
 api.add_resource(Refresh, '/refresh')
