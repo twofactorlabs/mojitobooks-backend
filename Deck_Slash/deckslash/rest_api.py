@@ -2,10 +2,12 @@ import os
 import secrets
 from flask import request
 from flask_restful import Resource
-from deckslash import app, api, db, bcrypt
+from deckslash import app, api, db, bcrypt, mail
 from deckslash.models import User, Card, UserSchema, CardSchema
-from deckslash.forms import RegistrationForm, LoginForm, UpdateAccountForm, CardForm, PictureForm, set_current_user
+from deckslash.forms import (RegistrationForm, LoginForm, UpdateAccountForm, CardForm, PictureForm,
+                             RequestResetForm, ResetPasswordForm, set_current_user)
 from flask_jwt_extended import jwt_required, create_access_token, jwt_refresh_token_required, create_refresh_token, get_jwt_identity
+from flask_mail import Message
 import datetime
 import uuid
 from functools import wraps
@@ -30,6 +32,15 @@ def save_picture(form_picture, pic_type):
         picture_path = os.path.join(app.root_path, 'static/CardPicture', picture_fn)
     form_picture.save(picture_path)
     return picture_fn
+
+def send_reset_email(user):
+    token = user.get_reset_token()
+    msg = Message('Password Reset Request', sender='mojitobooks@gmail.com', recipients=[user.email])
+    msg.body = f'''To reset your password, visit the following link:
+{'http://localhost:3000/reset_password/' + token}
+If you did not make this request then simply ignore this email and no changes will be made.
+'''
+    mail.send(msg)
 
 
 # FOR ADMIN AND TESTING ONLY
@@ -69,9 +80,7 @@ class Users(Resource):
     def get(self, username):
         user_schema = UserSchema()
         card_schema = CardSchema(many=True)
-        user = User.query.filter_by(username=username).first()
-        if not user:
-            return {'message':'No user found!'}, 400
+        user = User.query.filter_by(username=username).first_or_404()
         output = {'user': user_schema.dump(user).data, 'cards': card_schema.dump(user.cards).data}
         return output, 200
 
@@ -94,7 +103,7 @@ class Profile(Resource):
             current_user.name = form.name.data
             current_user.bio = form.bio.data
             db.session.commit()
-            return {'message': 'Account successfully updated'}, 200
+            return {'message': 'Account successfully updated'}, 205
         return form.errors, 400
 
 class ProfilePicture(Resource):
@@ -114,12 +123,9 @@ class ProfilePicture(Resource):
 class Post(Resource):
     def get(self, card_id):
         card_schema = CardSchema()
-        card = Card.query.filter_by(id=card_id).first()
-        if card: 
-            output = card_schema.dump(card).data 
-            return output, 200
-        else:
-            return {'message':'Could not find card'}, 400
+        card = Card.query.filter_by(id=card_id).first_or_404()
+        output = card_schema.dump(card).data 
+        return output, 200
     
     @token_required
     def post(current_user, self):
@@ -140,28 +146,28 @@ class Post(Resource):
     def put(current_user, self, card_id):
         form = CardForm(data=request.get_json())
         if form.validate():
-            card = Card.query.filter_by(id=card_id).first()
-            if card and card in current_user.cards:
+            card = Card.query.filter_by(id=card_id).first_or_404()
+            if card in current_user.cards:
                 card.title = form.title.data
                 card.description = form.description.data
                 db.session.commit()
-                return {'message':'Card successfully updated'}, 200
+                return {'message':'Card successfully updated'}, 205
             else:
-                return {'message':'Could not find card'}, 400
+                return {'message':'User does not own this card'}, 404
         else:
             return form.errors, 400
 
     @token_required
     def delete(current_user, self, card_id):
-        card = Card.query.filter_by(id=card_id).first()
-        if card and card in current_user.cards:
+        card = Card.query.filter_by(id=card_id).first_or_404()
+        if card in current_user.cards:
             if card.picture != 'card_default.png':
                 os.remove(os.path.join(app.root_path, 'static/CardPicture' ,card.picture))
             db.session.delete(card)
             db.session.commit()
-            return {'message':'Successfully deleted post!'}, 200
+            return {'message':'Successfully deleted post!'}, 205
         else:
-            return {'message': 'Cannot find post'}, 400
+            return {'message': 'User does not own this card'}, 404
         
 
 
@@ -177,7 +183,7 @@ class Login(Resource):
             else:
                 return {'password':['Wrong password']}, 401
         else:
-                return form.errors, 401
+                return form.errors, 400
 
 class Register(Resource):
     def post(self):
@@ -197,14 +203,39 @@ class Refresh(Resource):
         current_user = User.query.filter_by(public_id=get_jwt_identity()).first()
         return {'access_token': create_access_token(identity=current_user.public_id, expires_delta=datetime.timedelta(days=3))}, 200
 
+class ResetRequest(Resource):
+    def post(self):
+        form = RequestResetForm(data=request.get_json())
+        if form.validate():
+            user = User.query.filter_by(email=form.email.data).first()
+            send_reset_email(user)
+            return {'message': 'An email has been sent with instructions to reset your password.'}, 200
+        else:
+            return form.errors, 400
+
+class ResetPassword(Resource):
+    def post(self, token):
+        user = User.verify_reset_token(token)
+        if user is None:
+            return {'message':'That is an invalid or expired token'}, 401
+        form = ResetPasswordForm(data=request.get_json())
+        if form.validate():
+            hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+            user.password = hashed_password
+            db.session.commit()
+            return {'message':'Your password has been updated!'}, 200
+
 
 api.add_resource(TestUser, '/testuser')
 api.add_resource(TestCard, '/testcard')
 api.add_resource(Search, '/search')
-api.add_resource(Login, '/login')
-api.add_resource(Register, '/register')
-api.add_resource(Refresh, '/refresh')
-api.add_resource(Users, '/users/<username>')
+api.add_resource(Users, '/users/<string:username>')
 api.add_resource(Profile, '/profile')
 api.add_resource(ProfilePicture, '/profilepic')
 api.add_resource(Post, '/post', '/post/<int:card_id>')
+
+api.add_resource(Login, '/login')
+api.add_resource(Register, '/register')
+api.add_resource(Refresh, '/refresh')
+api.add_resource(ResetRequest, '/reset_password')
+api.add_resource(ResetPassword, '/reset_password/<token>')

@@ -26,8 +26,8 @@ class RegistrationForm(Form):
             raise ValidationError('That username is taken. Please choose a different one')
 
     def validate_email(self, email):
-        email = User.query.filter_by(email = email.data).first()
-        if email:
+        user = User.query.filter_by(email = email.data).first()
+        if user:
             raise ValidationError('That email is already used. Please choose a different one')
 
 
@@ -67,5 +67,17 @@ class CardForm(Form):
 class PictureForm(Form):
     picture = FileField('Update Profile Picture', [FileAllowed(['jpg', 'jpeg', 'png', 'gif'])])
 
+class RequestResetForm(Form):
+    email = fields.StringField('Email', [DataRequired(), Email()])
+
+    def validate_email(self, email):
+        user = User.query.filter_by(email = email.data).first()
+        if user is None:
+            raise ValidationError('There is no account with that email. You must register first.')
+
+class ResetPasswordForm(Form):
+    password = fields.PasswordField('Password', [DataRequired()])
+    confirm_password = fields.PasswordField('Confirm Password',
+                                     [DataRequired(), EqualTo('password')])
     
     
