@@ -151,9 +151,9 @@ class Post(Resource):
                 card.title = form.title.data
                 card.description = form.description.data
                 db.session.commit()
-                return {'message':'Card successfully updated'}, 205
+                return {'message':'Post successfully updated'}, 205
             else:
-                return {'message':'User does not own this card'}, 404
+                return {'message':'User does not own this post'}, 404
         else:
             return form.errors, 400
 
@@ -167,7 +167,15 @@ class Post(Resource):
             db.session.commit()
             return {'message':'Successfully deleted post!'}, 205
         else:
-            return {'message': 'User does not own this card'}, 404
+            return {'message': 'User does not own this post'}, 404
+
+class Clap(Resource):
+    @token_required
+    def post(current_user, self, card_id):
+        card = Card.query.filter_by(id=card_id).first_or_404()
+        card.likes += 1
+        db.session.commit()
+        return {'message':'Successfully clapped this post'}
         
 
 
@@ -233,6 +241,7 @@ api.add_resource(Users, '/users/<string:username>')
 api.add_resource(Profile, '/profile')
 api.add_resource(ProfilePicture, '/profilepic')
 api.add_resource(Post, '/post', '/post/<int:card_id>')
+api.add_resource(Clap, '/clap/<int:card_id>')
 
 api.add_resource(Login, '/login')
 api.add_resource(Register, '/register')
