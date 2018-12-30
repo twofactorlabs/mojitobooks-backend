@@ -1,0 +1,12 @@
+flask==1.0.2
+flask_restful==0.3.6
+flask_marshmallow==0.9.0
+flask_sqlalchemy==2.3.2
+flask_bcrypt==0.7.1
+flask_cors==3.0.6
+flask_jwt_extended==3.14.0
+flask_mail==0.9.1
+flask_wtf==0.14.2
+wtforms==2.2.1
+marshmallow_sqlalchemy==0.15.0
+uuid==1.30

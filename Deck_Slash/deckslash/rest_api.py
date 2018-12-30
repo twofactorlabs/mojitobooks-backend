@@ -80,9 +80,12 @@ class Users(Resource):
     def get(self, username):
         user_schema = UserSchema()
         card_schema = CardSchema(many=True)
-        user = User.query.filter_by(username=username).first_or_404()
-        output = {'user': user_schema.dump(user).data, 'cards': card_schema.dump(user.cards).data}
-        return output, 200
+        user = User.query.filter_by(username=username).first()
+        if user:
+            output = {'user': user_schema.dump(user).data, 'cards': card_schema.dump(user.cards).data}
+            return output, 200
+        else:
+            return {'msg':'Could not find user'}, 404
 
 # Functions for authorized users
 class Profile(Resource):
@@ -103,8 +106,8 @@ class Profile(Resource):
             current_user.name = form.name.data
             current_user.bio = form.bio.data
             db.session.commit()
-            return {'message': 'Account successfully updated'}, 205
-        return form.errors, 400
+            return {'msg': 'Account successfully updated'}, 205
+        return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
 
 class ProfilePicture(Resource):
     @token_required
@@ -117,15 +120,18 @@ class ProfilePicture(Resource):
                     os.remove(os.path.join(app.root_path, 'static/ProfileImage' ,current_user.profile_image))
                 current_user.profile_image = picture_file
                 db.session.commit()
-                return {'message': 'Profile Picture successfully updated'}, 205
-        return form.errors, 400
+                return {'msg': 'Profile Picture successfully updated'}, 205
+        return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
         
 class Post(Resource):
     def get(self, card_id):
         card_schema = CardSchema()
-        card = Card.query.filter_by(id=card_id).first_or_404()
-        output = card_schema.dump(card).data 
-        return output, 200
+        card = Card.query.filter_by(id=card_id).first()
+        if card:
+            output = card_schema.dump(card).data 
+            return output, 200
+        else:
+            return {'msg':'Could not find card'}, 404
     
     @token_required
     def post(current_user, self):
@@ -139,43 +145,47 @@ class Post(Resource):
                 card.picture = picture_file
             db.session.add(card)
             db.session.commit()
-            return {'message':'New post created!'}, 201
-        return [form_pic.errors, form_text.errors], 400
+            return {'msg':'New post created!'}, 201
+        errors = {'msg': [str(field) + ': ' + str(err[0]) for field, err in form_text.errors.items()] + [str(field) + ': ' + str(err[0]) for field, err in form_pic.errors.items()]}, 400
+        return errors, 400
 
     @token_required
     def put(current_user, self, card_id):
         form = CardForm(data=request.get_json())
         if form.validate():
-            card = Card.query.filter_by(id=card_id).first_or_404()
-            if card in current_user.cards:
+            card = Card.query.filter_by(id=card_id).first()
+            if card and card in current_user.cards:
                 card.title = form.title.data
                 card.description = form.description.data
                 db.session.commit()
-                return {'message':'Post successfully updated'}, 205
+                return {'msg':'Post successfully updated'}, 205
             else:
-                return {'message':'User does not own this post'}, 404
+                return {'msg':'User does not own this post'}, 404
         else:
             return form.errors, 400
 
     @token_required
     def delete(current_user, self, card_id):
-        card = Card.query.filter_by(id=card_id).first_or_404()
-        if card in current_user.cards:
+        card = Card.query.filter_by(id=card_id).first()
+        if card and card in current_user.cards:
             if card.picture != 'card_default.png':
                 os.remove(os.path.join(app.root_path, 'static/CardPicture' ,card.picture))
             db.session.delete(card)
             db.session.commit()
-            return {'message':'Successfully deleted post!'}, 205
+            return {'msg':'Successfully deleted post!'}, 205
         else:
-            return {'message': 'User does not own this post'}, 404
+            return {'msg': 'User does not own this post'}, 404
 
 class Clap(Resource):
     @token_required
     def post(current_user, self, card_id):
-        card = Card.query.filter_by(id=card_id).first_or_404()
-        card.likes += 1
-        db.session.commit()
-        return {'message':'Successfully clapped this post'}
+        card = Card.query.filter_by(id=card_id).first()
+        if card:
+            card.likes += 1
+            db.session.commit()
+            return {'msg':'Successfully clapped this post'}, 200
+        else:
+            return {'msg':'Could not find card'}, 404
         
 
 
@@ -189,9 +199,9 @@ class Login(Resource):
                 return {'access_token': create_access_token(identity=user.public_id, expires_delta=datetime.timedelta(days=3)),
                         'refresh_token': create_refresh_token(identity=user.public_id, expires_delta=False)}, 200
             else:
-                return {'password':['Wrong password']}, 401
+                return {'msg':'Wrong password'}, 401
         else:
-                return form.errors, 400
+                return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
 
 class Register(Resource):
     def post(self):
@@ -201,9 +211,9 @@ class Register(Resource):
             user = User(public_id=str(uuid.uuid4()) , username = form.username.data, email = form.email.data, name = form.name.data, password=hashed_password)
             db.session.add(user)
             db.session.commit()
-            return {'message':'New user created!'}, 201
+            return {'msg':'New user created!'}, 201
         else:
-            return form.errors, 400
+            return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
 
 class Refresh(Resource):
     @jwt_refresh_token_required
@@ -217,21 +227,23 @@ class ResetRequest(Resource):
         if form.validate():
             user = User.query.filter_by(email=form.email.data).first()
             send_reset_email(user)
-            return {'message': 'An email has been sent with instructions to reset your password.'}, 200
+            return {'msg': 'An email has been sent with instructions to reset your password.'}, 200
         else:
-            return form.errors, 400
+            return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
 
 class ResetPassword(Resource):
     def post(self, token):
         user = User.verify_reset_token(token)
         if user is None:
-            return {'message':'That is an invalid or expired token'}, 401
+            return {'msg':'That is an invalid or expired token'}, 401
         form = ResetPasswordForm(data=request.get_json())
         if form.validate():
             hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
             user.password = hashed_password
             db.session.commit()
-            return {'message':'Your password has been updated!'}, 200
+            return {'msg':'Your password has been updated!'}, 200
+        else:
+            return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
 
 
 api.add_resource(TestUser, '/testuser')
