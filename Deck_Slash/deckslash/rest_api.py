@@ -85,7 +85,7 @@ class Users(Resource):
             output = {'user': user_schema.dump(user).data, 'cards': card_schema.dump(user.cards).data}
             return output, 200
         else:
-            return {'msg':'Could not find user'}, 404
+            return {'msg':['Could not find user']}, 404
 
 # Functions for authorized users
 class Profile(Resource):
@@ -106,7 +106,7 @@ class Profile(Resource):
             current_user.name = form.name.data
             current_user.bio = form.bio.data
             db.session.commit()
-            return {'msg': 'Account successfully updated'}, 205
+            return {'msg': ['Account successfully updated']}, 205
         return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
 
 class ProfilePicture(Resource):
@@ -120,7 +120,7 @@ class ProfilePicture(Resource):
                     os.remove(os.path.join(app.root_path, 'static/ProfileImage' ,current_user.profile_image))
                 current_user.profile_image = picture_file
                 db.session.commit()
-                return {'msg': 'Profile Picture successfully updated'}, 205
+                return {'msg': ['Profile Picture successfully updated']}, 205
         return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
         
 class Post(Resource):
@@ -131,7 +131,7 @@ class Post(Resource):
             output = card_schema.dump(card).data 
             return output, 200
         else:
-            return {'msg':'Could not find card'}, 404
+            return {'msg':['Could not find card']}, 404
     
     @token_required
     def post(current_user, self):
@@ -145,9 +145,9 @@ class Post(Resource):
                 card.picture = picture_file
                 db.session.add(card)
                 db.session.commit()
-                return {'msg':'New post created!'}, 201
+                return {'msg':['New post created!']}, 201
             else:
-                return {'msg':'You must provide a picture file'}, 400
+                return {'msg':['You must provide a picture file']}, 400
         errors = {'msg': [str(field) + ': ' + str(err[0]) for field, err in form_text.errors.items()] + [str(field) + ': ' + str(err[0]) for field, err in form_pic.errors.items()]}, 400
         return errors, 400
 
@@ -160,9 +160,9 @@ class Post(Resource):
                 card.title = form.title.data
                 card.description = form.description.data
                 db.session.commit()
-                return {'msg':'Post successfully updated'}, 205
+                return {'msg':['Post successfully updated']}, 205
             else:
-                return {'msg':'User does not own this post'}, 404
+                return {'msg':['User does not own this post']}, 404
         else:
             return form.errors, 400
 
@@ -174,9 +174,9 @@ class Post(Resource):
                 os.remove(os.path.join(app.root_path, 'static/CardPicture' ,card.picture))
             db.session.delete(card)
             db.session.commit()
-            return {'msg':'Successfully deleted post!'}, 205
+            return {'msg':['Successfully deleted post!']}, 205
         else:
-            return {'msg': 'User does not own this post'}, 404
+            return {'msg': ['User does not own this post']}, 404
 
 class Clap(Resource):
     @token_required
@@ -185,9 +185,9 @@ class Clap(Resource):
         if card:
             card.likes += 1
             db.session.commit()
-            return {'msg':'Successfully clapped this post'}, 200
+            return {'msg':['Successfully clapped this post']}, 200
         else:
-            return {'msg':'Could not find card'}, 404
+            return {'msg':['Could not find card']}, 404
         
 
 
@@ -201,7 +201,7 @@ class Login(Resource):
                 return {'access_token': create_access_token(identity=user.public_id, expires_delta=datetime.timedelta(days=3)),
                         'refresh_token': create_refresh_token(identity=user.public_id, expires_delta=False)}, 200
             else:
-                return {'msg':'Wrong password'}, 401
+                return {'msg':['Wrong password']}, 401
         else:
                 return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
 
@@ -213,7 +213,7 @@ class Register(Resource):
             user = User(public_id=str(uuid.uuid4()) , username = form.username.data, email = form.email.data, name = form.name.data, password=hashed_password)
             db.session.add(user)
             db.session.commit()
-            return {'msg':'New user created!'}, 201
+            return {'msg':['New user created!']}, 201
         else:
             return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
 
@@ -229,7 +229,7 @@ class ResetRequest(Resource):
         if form.validate():
             user = User.query.filter_by(email=form.email.data).first()
             send_reset_email(user)
-            return {'msg': 'An email has been sent with instructions to reset your password.'}, 200
+            return {'msg': ['An email has been sent with instructions to reset your password.']}, 200
         else:
             return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
 
@@ -237,13 +237,13 @@ class ResetPassword(Resource):
     def post(self, token):
         user = User.verify_reset_token(token)
         if user is None:
-            return {'msg':'That is an invalid or expired token'}, 401
+            return {'msg':['That is an invalid or expired token']}, 401
         form = ResetPasswordForm(data=request.get_json())
         if form.validate():
             hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
             user.password = hashed_password
             db.session.commit()
-            return {'msg':'Your password has been updated!'}, 200
+            return {'msg':['Your password has been updated!']}, 200
         else:
             return {'msg': [str(field) + ': ' + str(err[0]) for field, err in form.errors.items()]}, 400
 
