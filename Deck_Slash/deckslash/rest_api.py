@@ -139,13 +139,15 @@ class Post(Resource):
         form_pic = PictureForm(data=request.files)
         form_text = CardForm(data)
         if form_pic.validate() and form_text.validate():
-            card = Card(title=data['title'], description=data['description'], user_id=current_user.id)
             if form_pic.picture.data:
+                card = Card(title=data['title'], description=data['description'], user_id=current_user.id)
                 picture_file = save_picture(form_pic.picture.data[0] if type(form_pic.picture.data) is list else form_pic.picture.data, 'card')
                 card.picture = picture_file
-            db.session.add(card)
-            db.session.commit()
-            return {'msg':'New post created!'}, 201
+                db.session.add(card)
+                db.session.commit()
+                return {'msg':'New post created!'}, 201
+            else:
+                return {'msg':'You must provide a picture file'}, 400
         errors = {'msg': [str(field) + ': ' + str(err[0]) for field, err in form_text.errors.items()] + [str(field) + ': ' + str(err[0]) for field, err in form_pic.errors.items()]}, 400
         return errors, 400
 
