@@ -21,6 +21,8 @@ class RegistrationForm(Form):
                                      [DataRequired(), EqualTo('password')])
 
     def validate_username(self, username):
+        if username.data.lower() in ['null', 'undefined']:
+            raise ValidationError('That username is invalid. Please choose a different one')
         user = User.query.filter_by(username = username.data).first()
         if user:
             raise ValidationError('That username is taken. Please choose a different one')

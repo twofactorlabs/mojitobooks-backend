@@ -11,7 +11,7 @@ class User(db.Model):
     password = db.Column(db.String(60), nullable=False)
     profile_image = db.Column(db.String(200), nullable=False,
                               default='default-avatar.png')
-    bio = db.Column(db.Text, nullable = False, default='My bio')
+    bio = db.Column(db.Text, nullable = False, default='Empty')
     cards = db.relationship('Card', backref='author', lazy=True)
 
     def get_reset_token(self, expires_sec=1800):
