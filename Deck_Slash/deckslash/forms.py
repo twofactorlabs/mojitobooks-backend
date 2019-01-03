@@ -16,9 +16,9 @@ class RegistrationForm(Form):
     username = fields.StringField('Username',
                         [DataRequired(), Length(min=2, max=20)])
     email = fields.StringField('Email', [DataRequired(), Email()])
-    password = fields.PasswordField('Password', [DataRequired()])
+    password = fields.PasswordField('Password', [DataRequired(), Length(min=6)])
     confirm_password = fields.PasswordField('Confirm Password',
-                                     [DataRequired(), EqualTo('password')])
+                                     [DataRequired(), Length(min=6), EqualTo('password')])
 
     def validate_username(self, username):
         if username.data.lower() in ['null', 'undefined']:
@@ -45,7 +45,7 @@ class UpdateAccountForm(Form):
     username = fields.StringField('Username',
                         [DataRequired(), Length(min=2, max=20)])
     email = fields.StringField('Email', [DataRequired(), Email()])
-    bio = fields.StringField('Bio', [DataRequired(), Length(min=2, max=100)])
+    bio = fields.StringField('Bio')
 
     def validate_username(self, username):
         global currentUser
@@ -78,8 +78,8 @@ class RequestResetForm(Form):
             raise ValidationError('There is no account with that email. You must register first.')
 
 class ResetPasswordForm(Form):
-    password = fields.PasswordField('Password', [DataRequired()])
+    password = fields.PasswordField('Password', [DataRequired(), Length(min=6)])
     confirm_password = fields.PasswordField('Confirm Password',
-                                     [DataRequired(), EqualTo('password')])
+                                     [DataRequired(), Length(min=6), EqualTo('password')])
     
     
