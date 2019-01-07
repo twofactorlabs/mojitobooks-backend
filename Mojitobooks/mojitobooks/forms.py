@@ -1,7 +1,7 @@
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import Form, fields
 from wtforms.validators import DataRequired, Length, EqualTo, Email, ValidationError
-from deckslash.models import User
+from mojitobooks.models import User
 
 
 currentUser = User.query.first()

@@ -26,4 +26,4 @@ app.config['MAIL_USERNAME']= os.environ.get('EMAIL_USER')
 app.config['MAIL_PASSWORD']= os.environ.get('EMAIL_PASS')
 mail = Mail(app)
 
-from deckslash import rest_api
+from mojitobooks import rest_api

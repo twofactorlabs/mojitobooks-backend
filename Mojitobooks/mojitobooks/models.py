@@ -1,6 +1,6 @@
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from datetime import datetime
-from deckslash import db, ma, app
+from mojitobooks import db, ma, app
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
