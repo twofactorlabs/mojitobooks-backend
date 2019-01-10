@@ -63,7 +63,9 @@ class TestCard(Resource):
 class Search(Resource):
     def get(self):
         card_schema = CardSchema(many=True)
-        output = card_schema.dump(Card.query.order_by('date_posted desc').limit(30).all()).data 
+        output = card_schema.dump(Card.query.order_by('date_posted desc').limit(30).all()).data
+        for elem in output:
+            elem['author'] = User.query.filter_by(id=elem['author']).first().username
         return output, 200
     
     def post(self):
@@ -71,9 +73,13 @@ class Search(Resource):
         card_schema = CardSchema(many=True)
         if term:
             output = card_schema.dump(Card.query.filter(Card.title.contains(term)).order_by('date_posted desc').limit(30).all()).data
+            for elem in output:
+                elem['author'] = User.query.filter_by(id=elem['author']).first().username
             return output, 200
         else:
-            output = card_schema.dump(Card.query.order_by('date_posted desc').limit(30).all()).data 
+            output = card_schema.dump(Card.query.order_by('date_posted desc').limit(30).all()).data
+            for elem in output:
+                elem['author'] = User.query.filter_by(id=elem['author']).first().username
             return output, 200
 
 class Users(Resource):
