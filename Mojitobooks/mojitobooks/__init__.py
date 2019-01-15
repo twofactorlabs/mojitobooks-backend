@@ -8,6 +8,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_mail import Mail
 import random, string
+import datetime
 
 app = Flask(__name__)
 api = Api(app)
@@ -15,6 +16,8 @@ CORS(app)
 app.config['SECRET_KEY'] = ''.join(random.choice(string.ascii_uppercase + string.digits)
                                    for x in range(32))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(days=3)
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = False
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 jwt = JWTManager(app)

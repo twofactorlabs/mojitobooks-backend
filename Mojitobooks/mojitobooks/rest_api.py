@@ -8,7 +8,6 @@ from mojitobooks.forms import (RegistrationForm, LoginForm, UpdateAccountForm, C
                              RequestResetForm, ResetPasswordForm, set_current_user)
 from flask_jwt_extended import jwt_required, create_access_token, jwt_refresh_token_required, create_refresh_token, get_jwt_identity
 from flask_mail import Message
-import datetime
 import uuid
 from functools import wraps
 
@@ -204,8 +203,8 @@ class Login(Resource):
         if form.validate():
             user = User.query.filter_by(username=form.username.data).first()
             if user and bcrypt.check_password_hash(user.password, form.password.data):
-                return {'access_token': create_access_token(identity=user.public_id, expires_delta=datetime.timedelta(days=3)),
-                        'refresh_token': create_refresh_token(identity=user.public_id, expires_delta=False)}, 200
+                return {'access_token': create_access_token(identity=user.public_id),
+                        'refresh_token': create_refresh_token(identity=user.public_id)}, 200
             else:
                 return {'msg':['Wrong password']}, 401
         else:
@@ -227,7 +226,7 @@ class Refresh(Resource):
     @jwt_refresh_token_required
     def get(self):
         current_user = User.query.filter_by(public_id=get_jwt_identity()).first()
-        return {'access_token': create_access_token(identity=current_user.public_id, expires_delta=datetime.timedelta(days=3))}, 200
+        return {'access_token': create_access_token(identity=current_user.public_id)}, 200
 
 class ResetRequest(Resource):
     def post(self):
