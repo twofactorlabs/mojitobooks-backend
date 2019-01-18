@@ -2,6 +2,7 @@ import os
 import secrets
 from flask import request
 from flask_restful import Resource
+from sqlalchemy import desc
 from mojitobooks import app, api, db, bcrypt, mail
 from mojitobooks.models import User, Card, UserSchema, CardSchema
 from mojitobooks.forms import (RegistrationForm, LoginForm, UpdateAccountForm, CardForm, PictureForm,
@@ -36,7 +37,7 @@ def send_reset_email(user):
     token = user.get_reset_token()
     msg = Message('Password Reset Request', sender='mojitobooks@gmail.com', recipients=[user.email])
     msg.body = f'''To reset your password, visit the following link:
-{'http://localhost:3000/reset_password/' + token}
+{'https://mojitobooks.netlify.com/reset_password/' + token}
 If you did not make this request then simply ignore this email and no changes will be made.
 '''
     mail.send(msg)
@@ -62,7 +63,7 @@ class TestCard(Resource):
 class Search(Resource):
     def get(self):
         card_schema = CardSchema(many=True)
-        output = card_schema.dump(Card.query.order_by('date_posted desc').limit(30).all()).data
+        output = card_schema.dump(Card.query.order_by(desc(Card.date_posted)).limit(30).all()).data
         for elem in output:
             elem['author'] = User.query.filter_by(id=elem['author']).first().username
         return output, 200
@@ -71,12 +72,12 @@ class Search(Resource):
         term = request.get_json()['term']
         card_schema = CardSchema(many=True)
         if term:
-            output = card_schema.dump(Card.query.filter(Card.title.contains(term)).order_by('date_posted desc').limit(30).all()).data
+            output = card_schema.dump(Card.query.filter(Card.title.contains(term)).order_by(desc(Card.date_posted)).limit(30).all()).data
             for elem in output:
                 elem['author'] = User.query.filter_by(id=elem['author']).first().username
             return output, 200
         else:
-            output = card_schema.dump(Card.query.order_by('date_posted desc').limit(30).all()).data
+            output = card_schema.dump(Card.query.order_by(desc(Card.date_posted)).limit(30).all()).data
             for elem in output:
                 elem['author'] = User.query.filter_by(id=elem['author']).first().username
             return output, 200
@@ -88,6 +89,9 @@ class Users(Resource):
         user = User.query.filter_by(username=username).first()
         if user:
             output = {'user': user_schema.dump(user).data, 'cards': card_schema.dump(user.cards).data}
+            output['sumclap'] = 0
+            for card in user.cards:
+                output['sumclap'] += card.likes
             return output, 200
         else:
             return {'msg':['Could not find user']}, 404
@@ -99,6 +103,9 @@ class Profile(Resource):
         user_schema = UserSchema()
         card_schema = CardSchema(many=True)
         output = {'user':user_schema.dump(current_user).data, 'cards': card_schema.dump(current_user.cards).data}
+        output['sumclap'] = 0
+        for card in user.cards:
+            output['sumclap'] += card.likes
         return output, 200
 
     @token_required

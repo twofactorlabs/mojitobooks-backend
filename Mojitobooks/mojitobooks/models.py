@@ -11,6 +11,7 @@ class User(db.Model):
     password = db.Column(db.String(60), nullable=False)
     profile_image = db.Column(db.String(200), nullable=False,
                               default='default-avatar.png')
+    date_joined = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     bio = db.Column(db.Text)
     cards = db.relationship('Card', backref='author', lazy=True)
 
@@ -46,7 +47,7 @@ class Card(db.Model):
 class UserSchema(ma.ModelSchema):
     class Meta:
         model = User
-        fields = ('username','email','name','profile_image','bio')
+        fields = ('username','email','name','profile_image','bio', 'date_joined')
 
 class CardSchema(ma.ModelSchema):
     class Meta:

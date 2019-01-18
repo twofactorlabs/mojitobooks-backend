@@ -16,6 +16,7 @@ CORS(app)
 app.config['SECRET_KEY'] = ''.join(random.choice(string.ascii_uppercase + string.digits)
                                    for x in range(32))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(days=3)
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = False
 db = SQLAlchemy(app)
