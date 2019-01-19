@@ -37,6 +37,7 @@ class Card(db.Model):
     description = db.Column(db.Text, nullable=False)
     likes = db.Column(db.Integer, nullable=False, default=0)
     date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    emoji = db.Column(db.String(200), nullable=False)
     picture = db.Column(db.String(20), nullable=False,
                         default='card_default.png')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -52,4 +53,4 @@ class UserSchema(ma.ModelSchema):
 class CardSchema(ma.ModelSchema):
     class Meta:
         model = Card
-        fields = ('id', 'title', 'description', 'likes', 'date_posted', 'picture', 'author')
+        fields = ('id', 'title', 'description', 'likes', 'date_posted', 'picture', 'author', 'emoji')

@@ -64,6 +64,7 @@ class UpdateAccountForm(Form):
 class CardForm(Form):
     title = fields.StringField('Title', [DataRequired(), Length(min=2, max=100)])
     description = fields.StringField('Description', [DataRequired()])
+    emoji = fields.StringField('Emoji', [DataRequired()])
     
 
 class PictureForm(Form):

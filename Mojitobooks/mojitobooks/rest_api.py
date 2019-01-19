@@ -42,6 +42,9 @@ If you did not make this request then simply ignore this email and no changes wi
 '''
     mail.send(msg)
 
+def convert_emoji(emoji):
+    return [elem for elem in emoji.split('$') if elem]
+
 
 # FOR ADMIN AND TESTING ONLY
 class TestUser(Resource):
@@ -66,6 +69,7 @@ class Search(Resource):
         output = card_schema.dump(Card.query.order_by(desc(Card.date_posted)).limit(30).all()).data
         for elem in output:
             elem['author'] = User.query.filter_by(id=elem['author']).first().username
+            elem['emoji'] = convert_emoji(elem['emoji'])
         return output, 200
     
     def post(self):
@@ -75,11 +79,31 @@ class Search(Resource):
             output = card_schema.dump(Card.query.filter(Card.title.contains(term)).order_by(desc(Card.date_posted)).limit(30).all()).data
             for elem in output:
                 elem['author'] = User.query.filter_by(id=elem['author']).first().username
+                elem['emoji'] = convert_emoji(elem['emoji'])
             return output, 200
         else:
             output = card_schema.dump(Card.query.order_by(desc(Card.date_posted)).limit(30).all()).data
             for elem in output:
                 elem['author'] = User.query.filter_by(id=elem['author']).first().username
+                elem['emoji'] = convert_emoji(elem['emoji'])
+            return output, 200
+
+class SearchEmoji(Resource):
+    def get(self, id):
+        term = id
+        card_schema = CardSchema(many=True)
+        if term:
+            term = '$' + term + '$'
+            output = card_schema.dump(Card.query.filter(Card.emoji.contains(term)).order_by(desc(Card.date_posted)).limit(30).all()).data
+            for elem in output:
+                elem['author'] = User.query.filter_by(id=elem['author']).first().username
+                elem['emoji'] = convert_emoji(elem['emoji'])
+            return output, 200
+        else:
+            output = card_schema.dump(Card.query.order_by(desc(Card.date_posted)).limit(30).all()).data
+            for elem in output:
+                elem['author'] = User.query.filter_by(id=elem['author']).first().username
+                elem['emoji'] = convert_emoji(elem['emoji'])
             return output, 200
 
 class Users(Resource):
@@ -90,8 +114,10 @@ class Users(Resource):
         if user:
             output = {'user': user_schema.dump(user).data, 'cards': card_schema.dump(user.cards).data}
             output['sumclap'] = 0
-            for card in user.cards:
-                output['sumclap'] += card.likes
+            for elem in output['cards']:
+                output['sumclap'] += elem['likes']
+                elem['author'] = User.query.filter_by(id=elem['author']).first().username
+                elem['emoji'] = convert_emoji(elem['emoji'])
             return output, 200
         else:
             return {'msg':['Could not find user']}, 404
@@ -140,7 +166,9 @@ class Post(Resource):
         card_schema = CardSchema()
         card = Card.query.filter_by(id=card_id).first()
         if card:
-            output = card_schema.dump(card).data 
+            output = card_schema.dump(card).data
+            output['author'] = User.query.filter_by(id=output['author']).first().username
+            output['emoji'] = convert_emoji(output['emoji'])
             return output, 200
         else:
             return {'msg':['Could not find card']}, 404
@@ -152,7 +180,7 @@ class Post(Resource):
         form_text = CardForm(data)
         if form_pic.validate() and form_text.validate():
             if form_pic.picture.data:
-                card = Card(title=data['title'], description=data['description'], user_id=current_user.id)
+                card = Card(title=data['title'], description=data['description'], emoji=data['emoji'], user_id=current_user.id)
                 picture_file = save_picture(form_pic.picture.data[0] if type(form_pic.picture.data) is list else form_pic.picture.data, 'card')
                 card.picture = picture_file
                 db.session.add(card)
@@ -171,6 +199,7 @@ class Post(Resource):
             if card and card in current_user.cards:
                 card.title = form.title.data
                 card.description = form.description.data
+                card.emoji = form.emoji.data
                 db.session.commit()
                 return {'msg':['Post successfully updated']}, 205
             else:
@@ -263,6 +292,7 @@ class ResetPassword(Resource):
 api.add_resource(TestUser, '/testuser')
 api.add_resource(TestCard, '/testcard')
 api.add_resource(Search, '/search')
+api.add_resource(SearchEmoji, '/tags/<string:id>')
 api.add_resource(Users, '/users/<string:username>')
 api.add_resource(Profile, '/profile')
 api.add_resource(ProfilePicture, '/profilepic')
