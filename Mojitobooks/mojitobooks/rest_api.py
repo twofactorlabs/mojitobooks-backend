@@ -130,7 +130,7 @@ class Profile(Resource):
         card_schema = CardSchema(many=True)
         output = {'user':user_schema.dump(current_user).data, 'cards': card_schema.dump(current_user.cards).data}
         output['sumclap'] = 0
-        for card in user.cards:
+        for card in current_user.cards:
             output['sumclap'] += card.likes
         return output, 200
 
